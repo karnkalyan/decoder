@@ -1,0 +1,19 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Device {
+  id          Int      @id @default(autoincrement())
+  hwid        String   @unique
+  isActivated Boolean  @default(false)
+  streamUrl   String?  @db.Text
+  description String?  // e.g. "Janakpur Office Box"
+  lastSeen    DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

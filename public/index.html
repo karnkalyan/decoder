@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DecodX Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-900 text-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-10 border-b border-gray-700 pb-4 flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-blue-500">DecodX <span class="text-white">Admin</span></h1>
+            <div class="flex items-center space-x-2">
+                <label class="text-sm text-gray-400">API Key:</label>
+                <input type="password" id="apiKey"
+                    class="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                    placeholder="Enter Admin Key">
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <section class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+                <h2 class="text-xl font-semibold mb-4 text-blue-400">Device Control</h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Target HWID</label>
+                        <input type="text" id="hwid"
+                            class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                            placeholder="e.g. 5A2B3C...">
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <button onclick="updateActivation(true)"
+                            class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">Activate</button>
+                        <button onclick="updateActivation(false)"
+                            class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition">Deauthorize</button>
+                    </div>
+
+                    <hr class="border-gray-700 my-4">
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Stream URL</label>
+                        <input type="text" id="streamUrl"
+                            class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                            placeholder="srt://, rtmp://, udp://...">
+                    </div>
+                    <button onclick="setStreamUrl()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">Push
+                        URL Change</button>
+                </div>
+            </section>
+
+            <section class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+                <h2 class="text-xl font-semibold mb-4 text-gray-400">Log Output</h2>
+                <div id="log"
+                    class="bg-black rounded-lg p-4 h-64 overflow-y-auto font-mono text-xs text-green-400 space-y-1">
+                    <div>> System ready...</div>
+                </div>
+                <button onclick="document.getElementById('log').innerHTML=''"
+                    class="mt-4 text-gray-500 hover:text-white text-sm underline">Clear Logs</button>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const log = (msg, isError = false) => {
+            const div = document.createElement('div');
+            div.className = isError ? 'text-red-400' : 'text-green-400';
+            div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            const logContainer = document.getElementById('log');
+            logContainer.appendChild(div);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        };
+
+        async function apiCall(endpoint, method, body) {
+            const apiKey = document.getElementById('apiKey').value;
+            const hwid = document.getElementById('hwid').value;
+
+            if (!hwid) {
+                alert("Please enter a HWID");
+                return;
+            }
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    log(`SUCCESS: ${JSON.stringify(data)}`);
+                } else {
+                    log(`ERROR: ${data.error || 'Request failed'}`, true);
+                }
+            } catch (err) {
+                log(`NETWORK ERROR: ${err.message}`, true);
+            }
+        }
+
+        function updateActivation(status) {
+            const hwid = document.getElementById('hwid').value;
+            apiCall('/v1/admin/activate', 'POST', { hwid, isActivated: status });
+        }
+
+        function setStreamUrl() {
+            const hwid = document.getElementById('hwid').value;
+            const streamUrl = document.getElementById('streamUrl').value;
+            apiCall('/v1/admin/seturl', 'POST', { hwid, streamUrl });
+        }
+    </script>
+</body>
+
+</html>
