@@ -7,13 +7,124 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Device {
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
+enum SubscriptionTier {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+enum DeviceStatus {
+  OFFLINE
+  IDLE
+  PLAYING
+  BUFFERING
+  ERROR
+  MAINTENANCE
+}
+
+enum LogType {
+  AUTH
+  CONNECTION
+  PLAYBACK_ERROR
+  SYSTEM
+}
+
+model User {
+  id                Int              @id @default(autoincrement())
+  email             String           @unique
+  passwordHash      String
+  firstName         String?
+  lastName          String?
+  role              Role             @default(USER)
+  subscription      SubscriptionTier @default(FREE)
+  maxDevicesAllowed Int              @default(5)
+  isActive          Boolean          @default(true)
+  devices           Device[]
+  deviceGroups      DeviceGroup[]
+  auditLogs         AuditLog[]
+  lastLogin         DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+model DeviceGroup {
   id          Int      @id @default(autoincrement())
-  hwid        String   @unique
-  isActivated Boolean  @default(false)
-  streamUrl   String?  @db.Text
-  description String?  // e.g. "Janakpur Office Box"
-  lastSeen    DateTime @default(now())
+  name        String
+  description String?  @db.Text
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  devices     Device[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@unique([userId, name])
+}
+
+model StreamChannel {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  streamUrl   String   @db.Text
+  type        String?
+  description String?
+  devices     Device[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Device {
+  id             Int          @id @default(autoincrement())
+  hwid           String       @unique
+  name           String?
+  isActivated    Boolean      @default(false)
+  streamUrl      String?      @db.Text
+  status         DeviceStatus @default(OFFLINE)
+  lastSeen       DateTime     @default(now())
+  model          String?
+  brand          String?
+  osVersion      String?
+  appVersion     String?
+  ipAddress      String?
+  sdkVersion     Int?
+  screenRes      String?
+  userId         Int?
+  user           User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  groupId        Int?
+  group          DeviceGroup?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  channelId      Int?
+  channel        StreamChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  connectionLogs ConnectionLog[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status])
+}
+
+model ConnectionLog {
+  id        String   @id @default(uuid())
+  deviceId  Int
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  event     String
+  details   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([deviceId, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  targetId  String?
+  type      LogType
+  details   String?  @db.Text
+  ipAddress String?
+  createdAt DateTime @default(now())
 }

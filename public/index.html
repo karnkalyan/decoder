@@ -3,117 +3,1180 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DecodX Admin Panel</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>DecodX Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --accent: #00a8ff;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block
+        }
+
+        .dot-green {
+            background: #22c55e;
+            box-shadow: 0 0 6px #22c55e
+        }
+
+        .dot-red {
+            background: #ef4444;
+            box-shadow: 0 0 6px #ef4444
+        }
+
+        .dot-yellow {
+            background: #eab308;
+            box-shadow: 0 0 6px #eab308
+        }
+
+        .dot-blue {
+            background: #3b82f6;
+            box-shadow: 0 0 6px #3b82f6
+        }
+
+        .dot-gray {
+            background: #6b7280
+        }
+
+        .modal-bg {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            backdrop-filter: blur(4px)
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, .03)
+        }
+
+        .truncate-url {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        .tab-btn {
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: .15s
+        }
+
+        .tab-btn.active {
+            background: #1d4ed8;
+            color: #fff
+        }
+
+        .tab-btn:not(.active) {
+            color: #9ca3af
+        }
+
+        .tab-btn:not(.active):hover {
+            color: #e5e7eb;
+            background: #1f2937
+        }
+
+        #login-screen {
+            position: fixed;
+            inset: 0;
+            background: #030712;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .input-cls {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #f9fafb;
+            outline: none;
+            width: 100%
+        }
+
+        .input-cls:focus {
+            border-color: #3b82f6
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #1d4ed8, #2563eb);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 22px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: .15s
+        }
+
+        .btn-primary:hover {
+            opacity: .9
+        }
+
+        .btn-danger {
+            background: #7f1d1d;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 14px;
+            color: #fca5a5;
+            font-size: 12px;
+            cursor: pointer
+        }
+
+        .btn-danger:hover {
+            background: #991b1b
+        }
+
+        .card {
+            background: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 16px
+        }
+
+        .progress-bar {
+            height: 4px;
+            border-radius: 2px;
+            background: #1f2937;
+            overflow: hidden
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2563eb, #00a8ff);
+            transition: width .3s ease
+        }
+
+        /* FIX: Toast stacking */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 60;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast-container>div {
+            pointer-events: auto;
+        }
+    </style>
 </head>
 
-<body class="bg-gray-900 text-gray-100 min-h-screen p-8">
-    <div class="max-w-4xl mx-auto">
-        <header class="mb-10 border-b border-gray-700 pb-4 flex justify-between items-center">
-            <h1 class="text-3xl font-bold text-blue-500">DecodX <span class="text-white">Admin</span></h1>
-            <div class="flex items-center space-x-2">
-                <label class="text-sm text-gray-400">API Key:</label>
-                <input type="password" id="apiKey"
-                    class="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
-                    placeholder="Enter Admin Key">
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+
+    <!-- Toast container for stacked notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ═══ LOGIN SCREEN ═══ -->
+    <div id="login-screen" class="fixed inset-0 bg-[#030712] z-[100] flex items-center justify-center">
+        <div class="card p-10 w-full max-w-sm">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold"><span style="color:var(--accent)">DecodX</span></h1>
+                <p class="text-gray-500 text-sm mt-1">Admin Panel</p>
             </div>
-        </header>
+            <div id="login-err"
+                class="hidden bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3 mb-4"></div>
+            <div class="space-y-4">
+                <input id="login-email" type="email" placeholder="Email address" class="input-cls" autocomplete="email">
+                <input id="login-password" type="password" placeholder="Password" class="input-cls"
+                    autocomplete="current-password">
+                <button onclick="doLogin()" class="btn-primary w-full mt-2">Sign In</button>
+            </div>
+        </div>
+    </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <section class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
-                <h2 class="text-xl font-semibold mb-4 text-blue-400">Device Control</h2>
+    <!-- ═══ MAIN APP ═══ -->
+    <div id="app" class="hidden">
 
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Target HWID</label>
-                        <input type="text" id="hwid"
-                            class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="e.g. 5A2B3C...">
-                    </div>
-
-                    <div class="flex space-x-2">
-                        <button onclick="updateActivation(true)"
-                            class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">Activate</button>
-                        <button onclick="updateActivation(false)"
-                            class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition">Deauthorize</button>
-                    </div>
-
-                    <hr class="border-gray-700 my-4">
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Stream URL</label>
-                        <input type="text" id="streamUrl"
-                            class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="srt://, rtmp://, udp://...">
-                    </div>
-                    <button onclick="setStreamUrl()"
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">Push
-                        URL Change</button>
+        <!-- TOP BAR -->
+        <nav class="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between sticky top-0 z-40">
+            <div class="flex items-center gap-4">
+                <h1 class="text-xl font-bold"><span style="color:var(--accent)">DecodX</span> <span
+                        class="text-gray-400 font-normal text-base">Admin</span></h1>
+                <div class="flex gap-1 ml-4">
+                    <button onclick="setTab('devices')" id="tab-devices" class="tab-btn active">Devices</button>
+                    <button onclick="setTab('users')" id="tab-users" class="tab-btn">Users</button>
                 </div>
-            </section>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="clock" class="text-xs text-gray-500 font-mono"></span>
+                <span id="user-badge"
+                    class="text-xs bg-blue-900/40 border border-blue-800 text-blue-300 rounded-full px-3 py-1"></span>
+                <button onclick="refreshAll()" class="btn-primary text-sm px-3 py-1.5">⟳ Refresh</button>
+                <button onclick="doLogout()" class="text-xs text-gray-500 hover:text-white px-2">Logout</button>
+            </div>
+        </nav>
 
-            <section class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
-                <h2 class="text-xl font-semibold mb-4 text-gray-400">Log Output</h2>
-                <div id="log"
-                    class="bg-black rounded-lg p-4 h-64 overflow-y-auto font-mono text-xs text-green-400 space-y-1">
-                    <div>> System ready...</div>
+        <!-- STATS BAR -->
+        <div class="px-6 py-4 grid grid-cols-2 md:grid-cols-7 gap-3">
+            <div class="card p-4 text-center">
+                <div class="text-2xl font-bold" id="s-total">0</div>
+                <div class="text-xs text-gray-500">Total</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-2xl font-bold text-green-400" id="s-online">0</div>
+                <div class="text-xs text-gray-500">Online</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-2xl font-bold text-blue-400" id="s-playing">0</div>
+                <div class="text-xs text-gray-500">Playing</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-2xl font-bold text-yellow-400" id="s-buffering">0</div>
+                <div class="text-xs text-gray-500">Buffering</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-2xl font-bold text-red-400" id="s-error">0</div>
+                <div class="text-xs text-gray-500">Errors</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-2xl font-bold text-gray-400" id="s-offline">0</div>
+                <div class="text-xs text-gray-500">Offline</div>
+            </div>
+            <div class="card p-4 text-center">
+                <div class="text-2xl font-bold text-cyan-400" id="s-apk-version">—</div>
+                <div class="text-xs text-gray-500">APK Version</div>
+                <div class="flex gap-1 mt-2 justify-center">
+                    <button onclick="openApkModal()"
+                        class="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded">Upload</button>
+                    <button onclick="forcePushApk()"
+                        class="text-xs bg-blue-900 hover:bg-blue-800 px-2 py-1 rounded">Push All</button>
                 </div>
-                <button onclick="document.getElementById('log').innerHTML=''"
-                    class="mt-4 text-gray-500 hover:text-white text-sm underline">Clear Logs</button>
-            </section>
+            </div>
+        </div>
+
+        <!-- ═══ DEVICES TAB ═══ -->
+        <div id="tab-content-devices" class="px-6 pb-6">
+            <div class="card overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between gap-2 flex-wrap">
+                    <h2 class="font-semibold text-gray-300">Devices</h2>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <input id="search" type="text" placeholder="Search HWID / name…"
+                            class="input-cls text-sm w-52 py-1.5" oninput="filterTable()">
+                        <select id="filter-status" onchange="filterTable()" class="input-cls text-sm w-32 py-1.5">
+                            <option value="">All Status</option>
+                            <option value="PLAYING">Playing</option>
+                            <option value="BUFFERING">Buffering</option>
+                            <option value="IDLE">Idle</option>
+                            <option value="ERROR">Error</option>
+                            <option value="OFFLINE">Offline</option>
+                        </select>
+                        <button onclick="bulkCmd('restart')"
+                            class="bg-purple-800 hover:bg-purple-700 px-3 py-1.5 rounded text-xs">↺ All
+                            Restart</button>
+                        <button onclick="bulkCmd('stop')"
+                            class="bg-yellow-800 hover:bg-yellow-700 px-3 py-1.5 rounded text-xs">⏹ All Stop</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-800/60 text-gray-400 text-xs uppercase">
+                            <tr>
+                                <th class="px-3 py-2 text-left">Status</th>
+                                <th class="px-3 py-2 text-left">HWID</th>
+                                <th class="px-3 py-2 text-left">Name</th>
+                                <th class="px-3 py-2 text-left">Model</th>
+                                <th class="px-3 py-2 text-left">OS</th>
+                                <th class="px-3 py-2 text-left">IP</th>
+                                <th class="px-3 py-2 text-left">Stream</th>
+                                <th class="px-3 py-2 text-left">Buffer</th>
+                                <th class="px-3 py-2 text-left">Last Seen</th>
+                                <th class="px-3 py-2 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devTbody"></tbody>
+                    </table>
+                </div>
+                <div id="noDevices" class="hidden px-4 py-10 text-center text-gray-600">No devices found</div>
+            </div>
+        </div>
+
+        <!-- ═══ USERS TAB ═══ -->
+        <div id="tab-content-users" class="hidden px-6 pb-6">
+            <div class="card overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+                    <h2 class="font-semibold text-gray-300">Users</h2>
+                    <button onclick="openAddUser()" class="btn-primary text-sm px-3 py-1.5">+ Add User</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-800/60 text-gray-400 text-xs uppercase">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Email</th>
+                                <th class="px-4 py-2 text-left">Name</th>
+                                <th class="px-4 py-2 text-left">Role</th>
+                                <th class="px-4 py-2 text-left">Plan</th>
+                                <th class="px-4 py-2 text-left">Devices</th>
+                                <th class="px-4 py-2 text-left">Status</th>
+                                <th class="px-4 py-2 text-left">Last Login</th>
+                                <th class="px-4 py-2 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTbody"></tbody>
+                    </table>
+                </div>
+                <div id="noUsers" class="hidden px-4 py-10 text-center text-gray-600">No users found</div>
+            </div>
+        </div>
+
+    </div><!-- end #app -->
+
+    <!-- ═══ MODAL: SET URL ═══ -->
+    <div id="modalUrl" class="modal-bg hidden">
+        <div class="card p-6 w-full max-w-lg">
+            <h3 class="text-lg font-semibold mb-4">Set Stream URL</h3>
+            <p class="text-xs text-gray-500 mb-1">Device: <span id="mu-hwid" class="text-gray-300 font-mono"></span></p>
+            <input id="mu-url" type="text" placeholder="https:// or udp:// or srt://…" class="input-cls mt-2">
+            <p class="text-xs text-gray-600 mt-1">Supports: UDP, RTP, RTSP, RTMP, SRT, HLS, DASH, HTTP/HTTPS streams
+            </p>
+            <div class="flex gap-2 mt-4">
+                <button onclick="submitUrl()" class="flex-1 btn-primary">Push URL</button>
+                <button onclick="closeModal('modalUrl')"
+                    class="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded-lg">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ MODAL: DEVICE DETAIL ═══ -->
+    <div id="modalDetail" class="modal-bg hidden">
+        <div class="card p-6 w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Device Details</h3>
+                <button onclick="closeModal('modalDetail')"
+                    class="text-gray-500 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div id="detailBody" class="space-y-2 text-sm font-mono"></div>
+            <h4 class="text-sm font-semibold mt-6 mb-2 text-gray-400">Connection Logs</h4>
+            <div id="detailLogs"
+                class="bg-black rounded-lg p-3 max-h-60 overflow-y-auto text-xs font-mono text-green-400 space-y-1">
+                <div>Loading…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ MODAL: RENAME DEVICE ═══ -->
+    <div id="modalRename" class="modal-bg hidden">
+        <div class="card p-6 w-full max-w-sm">
+            <h3 class="text-lg font-semibold mb-4">Rename Device</h3>
+            <input id="rn-hwid" type="hidden">
+            <input id="rn-name" type="text" placeholder="Device name" class="input-cls">
+            <div class="flex gap-2 mt-4">
+                <button onclick="submitRename()" class="flex-1 btn-primary">Save</button>
+                <button onclick="closeModal('modalRename')"
+                    class="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded-lg">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ MODAL: ADD/EDIT USER ═══ -->
+    <div id="modalUser" class="modal-bg hidden">
+        <div class="card p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold" id="userModalTitle">Add User</h3>
+                <button onclick="closeModal('modalUser')"
+                    class="text-gray-500 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div id="user-form-err"
+                class="hidden bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-3 py-2 mb-3">
+            </div>
+            <div class="space-y-3">
+                <input id="uf-id" type="hidden">
+                <input id="uf-email" type="email" placeholder="Email *" class="input-cls">
+                <input id="uf-password" type="password" placeholder="Password (leave blank to keep)" class="input-cls">
+                <div class="grid grid-cols-2 gap-3">
+                    <input id="uf-first" type="text" placeholder="First name" class="input-cls">
+                    <input id="uf-last" type="text" placeholder="Last name" class="input-cls">
+                </div>
+                <select id="uf-role" class="input-cls">
+                    <option value="USER">User</option>
+                    <option value="ADMIN">Admin</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                </select>
+                <select id="uf-subscription" class="input-cls">
+                    <option value="FREE">Free</option>
+                    <option value="BASIC">Basic</option>
+                    <option value="PRO">Pro</option>
+                    <option value="ENTERPRISE">Enterprise</option>
+                </select>
+                <input id="uf-maxdev" type="number" placeholder="Max devices (5)" min="1" class="input-cls">
+                <label class="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+                    <input id="uf-active" type="checkbox" checked class="accent-blue-500 w-4 h-4"> Active
+                </label>
+            </div>
+            <div class="flex gap-2 mt-5">
+                <button onclick="submitUser()" class="flex-1 btn-primary">Save User</button>
+                <button onclick="closeModal('modalUser')"
+                    class="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded-lg">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ CONFIRM MODAL ═══ -->
+    <div id="modalConfirm" class="modal-bg hidden">
+        <div class="card p-6 w-full max-w-sm text-center">
+            <p class="text-lg font-semibold mb-2" id="confirm-msg">Are you sure?</p>
+            <p class="text-sm text-gray-500 mb-6" id="confirm-sub"></p>
+            <div class="flex gap-3 justify-center">
+                <button id="confirm-yes" class="btn-primary px-8">Confirm</button>
+                <button onclick="closeModal('modalConfirm')"
+                    class="bg-gray-700 hover:bg-gray-600 px-8 py-2 rounded-lg">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ MODAL: APK UPDATE ═══ -->
+    <div id="modalApk" class="modal-bg hidden">
+        <div class="card p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Update APK</h3>
+                <button onclick="closeModal('modalApk')"
+                    class="text-gray-500 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+
+            <!-- Current info -->
+            <div class="bg-gray-800/60 rounded-lg p-3 mb-4 text-xs font-mono text-gray-400">
+                <div>Current version: <span id="apk-current-version" class="text-cyan-400">—</span></div>
+                <div class="truncate">Download URL: <span id="apk-current-url" class="text-gray-500">—</span></div>
+            </div>
+
+            <!-- Upload progress -->
+            <div id="apk-progress-wrap" class="hidden mb-4">
+                <div class="text-xs text-gray-400 mb-1" id="apk-progress-label">Uploading…</div>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="apk-progress-bar" style="width:0%"></div>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <input id="apk-version" type="text" placeholder="Version e.g. 1.2.0 *" class="input-cls">
+                <div>
+                    <label class="text-xs text-gray-500 mb-1 block">APK File</label>
+                    <input id="apk-file" type="file" accept=".apk" class="input-cls text-sm">
+                </div>
+                <label class="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+                    <input id="apk-force" type="checkbox" class="accent-blue-500 w-4 h-4">
+                    Force-push update to all online devices immediately
+                </label>
+            </div>
+
+            <div class="flex gap-2 mt-4">
+                <button onclick="uploadApk()" class="flex-1 btn-primary">Upload APK</button>
+                <button onclick="setApkVersionOnly()" class="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded">Version
+                    Only</button>
+            </div>
+            <button onclick="closeModal('modalApk')"
+                class="mt-3 w-full bg-gray-800 hover:bg-gray-700 py-2 rounded text-sm">Cancel</button>
         </div>
     </div>
 
     <script>
-        const log = (msg, isError = false) => {
-            const div = document.createElement('div');
-            div.className = isError ? 'text-red-400' : 'text-green-400';
-            div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            const logContainer = document.getElementById('log');
-            logContainer.appendChild(div);
-            logContainer.scrollTop = logContainer.scrollHeight;
-        };
+        /* ════════════════════════════════════════
+           STATE
+        ════════════════════════════════════════ */
+        let devices = [];
+        let users = [];
+        let authToken = localStorage.getItem('decodx_token') || '';
+        let currentTab = 'devices';
+        let pollTimer = null;
+        const POLL_INTERVAL = 5000;
+        const FAST_POLL_INTERVAL = 1500;  // Used briefly after actions for snappier UI
 
-        async function apiCall(endpoint, method, body) {
-            const apiKey = document.getElementById('apiKey').value;
-            const hwid = document.getElementById('hwid').value;
+        /* ════════════════════════════════════════
+           INIT
+        ════════════════════════════════════════ */
+        document.addEventListener('DOMContentLoaded', () => {
+            if (authToken) showApp();
+            document.getElementById('login-password').addEventListener('keydown', e => {
+                if (e.key === 'Enter') doLogin();
+            });
+        });
 
-            if (!hwid) {
-                alert("Please enter a HWID");
+        setInterval(() => {
+            const clock = document.getElementById('clock');
+            if (clock) clock.textContent = new Date().toLocaleTimeString();
+        }, 1000);
+
+        /* ════════════════════════════════════════
+           AUTH
+        ════════════════════════════════════════ */
+        async function doLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const errEl = document.getElementById('login-err');
+            errEl.classList.add('hidden');
+            if (!email || !password) {
+                errEl.textContent = 'Please enter email and password.';
+                errEl.classList.remove('hidden');
                 return;
             }
-
             try {
-                const response = await fetch(endpoint, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': apiKey
-                    },
-                    body: JSON.stringify(body)
+                const r = await fetch('/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
                 });
-
-                const data = await response.json();
-                if (response.ok) {
-                    log(`SUCCESS: ${JSON.stringify(data)}`);
-                } else {
-                    log(`ERROR: ${data.error || 'Request failed'}`, true);
+                const data = await r.json();
+                if (!r.ok) {
+                    errEl.textContent = data.error || 'Login failed';
+                    errEl.classList.remove('hidden');
+                    return;
                 }
-            } catch (err) {
-                log(`NETWORK ERROR: ${err.message}`, true);
+                authToken = data.token;
+                localStorage.setItem('decodx_token', authToken);
+                document.getElementById('login-password').value = '';
+                showApp(data.user);
+            } catch (e) {
+                errEl.textContent = 'Server error. Is the server running?';
+                errEl.classList.remove('hidden');
             }
         }
 
-        function updateActivation(status) {
-            const hwid = document.getElementById('hwid').value;
-            apiCall('/v1/admin/activate', 'POST', { hwid, isActivated: status });
+        function doLogout() {
+            authToken = '';
+            localStorage.removeItem('decodx_token');
+            if (pollTimer) clearInterval(pollTimer);
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
         }
 
-        function setStreamUrl() {
-            const hwid = document.getElementById('hwid').value;
-            const streamUrl = document.getElementById('streamUrl').value;
-            apiCall('/v1/admin/seturl', 'POST', { hwid, streamUrl });
+        async function showApp(user) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            try {
+                if (!user) {
+                    const r = await api('/v1/auth/me');
+                    if (!r.ok) { doLogout(); return; }
+                    user = r.data;
+                }
+                const name = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.email;
+                const badge = document.getElementById('user-badge');
+                if (badge) badge.textContent = `${name} · ${user.role.replace('_', ' ')}`;
+                if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
+                    const t = document.getElementById('tab-users');
+                    if (t) t.style.display = 'none';
+                }
+                refreshAll();
+                startPolling();
+            } catch (err) {
+                console.error('Error initializing app:', err);
+                showToast('Failed to load dashboard data', 'error');
+            }
+        }
+
+        /** Start normal polling interval */
+        function startPolling() {
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(refreshAll, POLL_INTERVAL);
+        }
+
+        /**
+         * Temporarily switch to fast polling after an action so the admin
+         * sees the result of deauth/auth/stop/play quickly.
+         */
+        function fastPollBriefly(duration = 6000) {
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(refreshAll, FAST_POLL_INTERVAL);
+            setTimeout(() => {
+                startPolling(); // Revert to normal interval
+            }, duration);
+        }
+
+        /* ════════════════════════════════════════
+           TABS
+        ════════════════════════════════════════ */
+        function setTab(tab) {
+            currentTab = tab;
+            document.getElementById('tab-content-devices').classList.toggle('hidden', tab !== 'devices');
+            document.getElementById('tab-content-users').classList.toggle('hidden', tab !== 'users');
+            document.getElementById('tab-devices').classList.toggle('active', tab === 'devices');
+            document.getElementById('tab-users').classList.toggle('active', tab === 'users');
+            if (tab === 'users') loadUsers();
+        }
+
+        /* ════════════════════════════════════════
+           API HELPER
+        ════════════════════════════════════════ */
+        async function api(path, method = 'GET', body = null) {
+            const opts = {
+                method,
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }
+            };
+            if (body) opts.body = JSON.stringify(body);
+            try {
+                const r = await fetch(path, opts);
+                if (r.status === 401 && !path.includes('/auth/')) {
+                    doLogout();
+                    return { ok: false, status: 401, data: {} };
+                }
+                return { ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) };
+            } catch (e) {
+                return { ok: false, status: 0, data: { error: 'Network error' } };
+            }
+        }
+
+        /* ════════════════════════════════════════
+           STATUS HELPERS
+        ════════════════════════════════════════ */
+        function statusDot(dev) {
+            if (!dev.isOnline) return '<span class="dot dot-gray"></span>';
+            const m = { PLAYING: 'dot-green', BUFFERING: 'dot-yellow', ERROR: 'dot-red' };
+            return `<span class="dot ${m[dev.status] || 'dot-blue'}"></span>`;
+        }
+
+        function statusBadge(dev) {
+            if (!dev.isOnline) return '<span class="text-gray-500">OFFLINE</span>';
+            const c = {
+                PLAYING: 'text-green-400',
+                BUFFERING: 'text-yellow-400',
+                ERROR: 'text-red-400',
+                IDLE: 'text-blue-400',
+                DEAUTHORIZED: 'text-orange-400'
+            };
+            return `<span class="${c[dev.status] || 'text-gray-400'}">${dev.status}</span>`;
+        }
+
+        function ago(d) {
+            if (!d) return '—';
+            const s = Math.floor((Date.now() - new Date(d)) / 1000);
+            if (s < 0) return 'just now';
+            if (s < 60) return s + 's ago';
+            if (s < 3600) return Math.floor(s / 60) + 'm ago';
+            if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+            return Math.floor(s / 86400) + 'd ago';
+        }
+
+        function roleBadge(role) {
+            const m = {
+                SUPER_ADMIN: 'bg-red-900/50 text-red-300 border border-red-800',
+                ADMIN: 'bg-yellow-900/50 text-yellow-300 border border-yellow-800',
+                USER: 'bg-gray-800 text-gray-400'
+            };
+            return `<span class="text-xs px-2 py-0.5 rounded-full ${m[role] || ''}">${role.replace('_', ' ')}</span>`;
+        }
+
+        function planBadge(plan) {
+            const m = {
+                FREE: 'bg-gray-800 text-gray-400',
+                BASIC: 'bg-blue-900/50 text-blue-300 border border-blue-800',
+                PRO: 'bg-purple-900/50 text-purple-300 border border-purple-800',
+                ENTERPRISE: 'bg-green-900/50 text-green-300 border border-green-800'
+            };
+            return `<span class="text-xs px-2 py-0.5 rounded-full ${m[plan] || ''}">${plan}</span>`;
+        }
+
+        /* ════════════════════════════════════════
+           DEVICE TABLE
+        ════════════════════════════════════════ */
+        async function refreshAll() {
+            await refreshDevices();
+            if (currentTab === 'users') await loadUsers();
+            await fetchApkInfo();
+        }
+
+        async function refreshDevices() {
+            const r = await api('/v1/admin/devices');
+            if (!r.ok) return;
+            devices = r.data;
+            updateStats(devices);
+            filterTable();
+        }
+
+        function updateStats(list) {
+            document.getElementById('s-total').textContent = list.length;
+            document.getElementById('s-online').textContent = list.filter(d => d.isOnline).length;
+            document.getElementById('s-playing').textContent = list.filter(d => d.status === 'PLAYING').length;
+            document.getElementById('s-buffering').textContent = list.filter(d => d.status === 'BUFFERING').length;
+            document.getElementById('s-error').textContent = list.filter(d => d.status === 'ERROR').length;
+            document.getElementById('s-offline').textContent = list.filter(d => !d.isOnline).length;
+        }
+
+        function filterTable() {
+            const q = document.getElementById('search').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-status').value;
+
+            let filtered = devices;
+
+            if (q) {
+                filtered = filtered.filter(d =>
+                    d.hwid.toLowerCase().includes(q) ||
+                    (d.name || '').toLowerCase().includes(q) ||
+                    (d.model || '').toLowerCase().includes(q) ||
+                    (d.ipAddress || '').toLowerCase().includes(q)
+                );
+            }
+
+            if (statusFilter) {
+                if (statusFilter === 'OFFLINE') {
+                    filtered = filtered.filter(d => !d.isOnline);
+                } else {
+                    filtered = filtered.filter(d => d.isOnline && d.status === statusFilter);
+                }
+            }
+
+            renderTable(filtered);
+        }
+
+        function escapeAttr(s) {
+            return (s || '').replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+        }
+
+        function renderTable(list) {
+            const tbody = document.getElementById('devTbody');
+            const noDiv = document.getElementById('noDevices');
+            if (!list.length) { tbody.innerHTML = ''; noDiv.classList.remove('hidden'); return; }
+            noDiv.classList.add('hidden');
+            tbody.innerHTML = list.map(d => {
+                const buf = d.runtime?.bufferPercent >= 0 ? d.runtime.bufferPercent + '%' : '—';
+                const url = d.streamUrl || d.runtime?.currentUrl || '—';
+                const urlSh = url.length > 40 ? url.substring(0, 40) + '…' : url;
+                const safeUrl = escapeAttr(d.streamUrl || '');
+                const safeName = escapeAttr(d.name || '');
+                return `<tr class="border-t border-gray-800/50">
+  <td class="px-3 py-2.5">${statusDot(d)} ${statusBadge(d)}</td>
+  <td class="px-3 py-2.5 font-mono text-xs">${d.hwid}</td>
+  <td class="px-3 py-2.5">${d.name || '<span class="text-gray-600">unnamed</span>'}</td>
+  <td class="px-3 py-2.5 text-xs text-gray-400">${d.brand || ''} ${d.model || '—'}</td>
+  <td class="px-3 py-2.5 text-xs text-gray-400">${d.osVersion || '—'}</td>
+  <td class="px-3 py-2.5 text-xs text-gray-500 font-mono">${d.ipAddress || '—'}</td>
+  <td class="px-3 py-2.5 text-xs truncate-url" title="${escapeAttr(url)}">${urlSh}</td>
+  <td class="px-3 py-2.5 text-xs">${buf}</td>
+  <td class="px-3 py-2.5 text-xs text-gray-500">${ago(d.lastSeen)}</td>
+  <td class="px-3 py-2.5 text-center">
+    <div class="flex gap-1 justify-center flex-wrap">
+      ${d.isActivated
+                        ? `<button onclick="toggleAct('${d.hwid}',false)" class="px-2 py-1 bg-red-900 hover:bg-red-800 rounded text-xs">Deauth</button>`
+                        : `<button onclick="toggleAct('${d.hwid}',true)"  class="px-2 py-1 bg-green-900 hover:bg-green-800 rounded text-xs">Activate</button>`
+                    }
+      <button onclick="openUrlModal('${d.hwid}','${safeUrl}')" class="px-2 py-1 bg-blue-900 hover:bg-blue-800 rounded text-xs">URL</button>
+      <button onclick="sendCmd('${d.hwid}','stop')" class="px-2 py-1 bg-yellow-900 hover:bg-yellow-800 rounded text-xs">Stop</button>
+      <button onclick="sendCmd('${d.hwid}','restart')" class="px-2 py-1 bg-purple-900 hover:bg-purple-800 rounded text-xs">Restart</button>
+      <button onclick="confirmReboot('${d.hwid}')" class="px-2 py-1 bg-orange-900 hover:bg-orange-800 rounded text-xs">Reboot HW</button>
+      <button onclick="openRename('${d.hwid}','${safeName}')" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">Rename</button>
+      <button onclick="openDetail('${d.hwid}')" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">Info</button>
+      <button onclick="confirmDeleteDevice('${d.hwid}')" class="px-2 py-1 bg-red-950 hover:bg-red-900 rounded text-xs text-red-400">Delete</button>
+    </div>
+  </td>
+</tr>`;
+            }).join('');
+        }
+
+        /* ════════════════════════════════════════
+           DEVICE ACTIONS
+        ════════════════════════════════════════ */
+        async function toggleAct(hwid, activate) {
+            const r = await api('/v1/admin/activate', 'POST', { hwid, isActivated: activate });
+            if (r.ok) {
+                showToast(activate
+                    ? `✓ ${hwid} activated — play command sent`
+                    : `✗ ${hwid} deauthorized — stream stopped`
+                );
+                // Fast-poll briefly so the admin sees the status change quickly
+                fastPollBriefly(8000);
+            } else {
+                showToast(r.data.error || 'Action failed', 'error');
+            }
+            refreshDevices();
+        }
+
+        async function sendCmd(hwid, cmd, data) {
+            const r = await api(`/v1/admin/device/${hwid}/command`, 'POST', { command: cmd, data: data || {} });
+            if (r.ok) {
+                showToast(`Command "${cmd}" sent to ${hwid}`);
+                fastPollBriefly(6000);
+            } else {
+                showToast(r.data.error || 'Failed', 'error');
+            }
+            refreshDevices();
+        }
+
+        async function bulkCmd(cmd) {
+            showConfirm(`Send "${cmd}" to ALL devices?`,
+                'This will affect all currently connected devices.',
+                async () => {
+                    const r = await api('/v1/admin/bulk-command', 'POST', { command: cmd });
+                    if (r.ok) {
+                        showToast(`Sent "${cmd}" to ${r.data.sent} device(s)`);
+                        fastPollBriefly(8000);
+                    } else {
+                        showToast(r.data.error || 'Failed', 'error');
+                    }
+                }
+            );
+        }
+
+        function confirmReboot(hwid) {
+            showConfirm(`Reboot Hardware?`, `Send hardware reboot to ${hwid}. Requires root.`, async () => {
+                const r = await api(`/v1/admin/device/${hwid}/reboot`, 'POST');
+                if (r.ok) showToast(`Reboot command sent to ${hwid}`);
+                else showToast(r.data.error || 'Failed', 'error');
+            });
+        }
+
+        function confirmDeleteDevice(hwid) {
+            showConfirm(`Delete Device?`, `HWID: ${hwid} — This cannot be undone.`, async () => {
+                await api(`/v1/admin/device/${hwid}`, 'DELETE');
+                showToast(`Device ${hwid} deleted`);
+                refreshDevices();
+            });
+        }
+
+        /* ════════════════════════════════════════
+           URL MODAL (FIX: removed stray space in onclick)
+        ════════════════════════════════════════ */
+        function openUrlModal(hwid, currentUrl) {
+            document.getElementById('mu-hwid').textContent = hwid;
+            document.getElementById('mu-url').value = currentUrl || '';
+            document.getElementById('modalUrl').classList.remove('hidden');
+            // Auto-focus the URL input
+            setTimeout(() => document.getElementById('mu-url').focus(), 100);
+        }
+
+        async function submitUrl() {
+            const hwid = document.getElementById('mu-hwid').textContent;
+            const url = document.getElementById('mu-url').value.trim();
+            if (!url) { showToast('Please enter a stream URL', 'error'); return; }
+            const r = await api('/v1/admin/seturl', 'POST', { hwid, streamUrl: url });
+            if (r.ok) {
+                showToast(`URL set for ${hwid}`);
+                fastPollBriefly(6000);
+            } else {
+                showToast(r.data.error || 'Failed', 'error');
+            }
+            closeModal('modalUrl');
+            refreshDevices();
+        }
+
+        /* ════════════════════════════════════════
+           RENAME MODAL
+        ════════════════════════════════════════ */
+        function openRename(hwid, name) {
+            document.getElementById('rn-hwid').value = hwid;
+            document.getElementById('rn-name').value = name;
+            document.getElementById('modalRename').classList.remove('hidden');
+            setTimeout(() => document.getElementById('rn-name').focus(), 100);
+        }
+
+        async function submitRename() {
+            const hwid = document.getElementById('rn-hwid').value;
+            const name = document.getElementById('rn-name').value.trim();
+            await api(`/v1/admin/device/${hwid}/name`, 'POST', { name });
+            closeModal('modalRename');
+            refreshDevices();
+        }
+
+        /* ════════════════════════════════════════
+           DETAIL MODAL
+        ════════════════════════════════════════ */
+        async function openDetail(hwid) {
+            document.getElementById('modalDetail').classList.remove('hidden');
+            const r = await api(`/v1/admin/device/${hwid}`);
+            if (!r.ok) { document.getElementById('detailBody').innerHTML = 'Error loading device'; return; }
+            const d = r.data, rt = d.runtime || {};
+            document.getElementById('detailBody').innerHTML = `
+<div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+  <div class="text-gray-500">HWID</div>           <div>${d.hwid}</div>
+  <div class="text-gray-500">Name</div>           <div>${d.name || '—'}</div>
+  <div class="text-gray-500">Status</div>         <div>${d.isOnline ? d.status : 'OFFLINE'}</div>
+  <div class="text-gray-500">Activated</div>      <div class="${d.isActivated ? 'text-green-400' : 'text-red-400'}">${d.isActivated ? '✓ Yes' : '✗ No'}</div>
+  <div class="text-gray-500">Brand / Model</div>  <div>${d.brand || ''} ${d.model || '—'}</div>
+  <div class="text-gray-500">OS</div>             <div>${d.osVersion || '—'}</div>
+  <div class="text-gray-500">App Version</div>    <div>${d.appVersion || '—'}</div>
+  <div class="text-gray-500">SDK</div>            <div>${d.sdkVersion || '—'}</div>
+  <div class="text-gray-500">Screen</div>         <div>${d.screenRes || '—'}</div>
+  <div class="text-gray-500">IP</div>             <div>${d.ipAddress || '—'}</div>
+  <div class="text-gray-500">Stream URL</div>     <div class="break-all">${d.streamUrl || '—'}</div>
+  <div class="text-gray-500">Playing URL</div>    <div class="break-all">${rt.currentUrl || '—'}</div>
+  <div class="text-gray-500">Protocol</div>       <div>${rt.protocol || '—'}</div>
+  <div class="text-gray-500">Buffer</div>         <div>${rt.bufferPercent >= 0 ? rt.bufferPercent + '%' : '—'}</div>
+  <div class="text-gray-500">Stalls</div>         <div>${rt.consecutiveStalls ?? '—'}</div>
+  <div class="text-gray-500">Retries</div>        <div>${rt.retryCount ?? '—'}</div>
+  <div class="text-gray-500">Uptime</div>         <div>${rt.uptime ? Math.floor(rt.uptime) + 's' : '—'}</div>
+  <div class="text-gray-500">Last Seen</div>      <div>${ago(d.lastSeen)}</div>
+  <div class="text-gray-500">Created</div>        <div>${new Date(d.createdAt).toLocaleString()}</div>
+</div>
+<div class="mt-4 flex gap-2 flex-wrap">
+  ${d.isActivated
+                    ? `<button onclick="toggleAct('${d.hwid}',false);closeModal('modalDetail')" class="px-3 py-1.5 bg-red-900 hover:bg-red-800 rounded text-xs">Deauth</button>`
+                    : `<button onclick="toggleAct('${d.hwid}',true);closeModal('modalDetail')" class="px-3 py-1.5 bg-green-900 hover:bg-green-800 rounded text-xs">Activate</button>`
+                }
+  <button onclick="sendCmd('${d.hwid}','reload')"         class="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 rounded text-xs">↺ Reload</button>
+  <button onclick="sendCmd('${d.hwid}','restart')"        class="px-3 py-1.5 bg-purple-900 hover:bg-purple-800 rounded text-xs">Restart App</button>
+  <button onclick="confirmReboot('${d.hwid}')"            class="px-3 py-1.5 bg-orange-900 hover:bg-orange-800 rounded text-xs">Reboot HW</button>
+  <button onclick="sendCmd('${d.hwid}','status_request')" class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs">Request Status</button>
+</div>`;
+            const lr = await api(`/v1/admin/device/${hwid}/logs?limit=50`);
+            const logsDiv = document.getElementById('detailLogs');
+            if (lr.ok && lr.data.length) {
+                logsDiv.innerHTML = lr.data.map(l =>
+                    `<div><span class="text-gray-600">${new Date(l.createdAt).toLocaleString()}</span> ` +
+                    `<span class="text-yellow-400">${l.event}</span> ${l.details || ''}</div>`
+                ).join('');
+            } else {
+                logsDiv.innerHTML = '<div class="text-gray-600">No logs</div>';
+            }
+        }
+
+        /* ════════════════════════════════════════
+           USER MANAGEMENT
+        ════════════════════════════════════════ */
+        async function loadUsers() {
+            const r = await api('/v1/admin/users');
+            if (!r.ok) return;
+            users = r.data;
+            renderUsers(users);
+        }
+
+        function renderUsers(list) {
+            const tbody = document.getElementById('usersTbody');
+            const noDiv = document.getElementById('noUsers');
+            if (!list.length) { tbody.innerHTML = ''; noDiv.classList.remove('hidden'); return; }
+            noDiv.classList.add('hidden');
+            tbody.innerHTML = list.map(u => `
+<tr class="border-t border-gray-800/50">
+  <td class="px-4 py-2.5 text-sm">${u.email}</td>
+  <td class="px-4 py-2.5 text-sm text-gray-400">${((u.firstName || '') + ' ' + (u.lastName || '')).trim() || '—'}</td>
+  <td class="px-4 py-2.5">${roleBadge(u.role)}</td>
+  <td class="px-4 py-2.5">${planBadge(u.subscription)}</td>
+  <td class="px-4 py-2.5 text-sm text-center">${u._count?.devices || 0} / ${u.maxDevicesAllowed}</td>
+  <td class="px-4 py-2.5">${u.isActive ? '<span class="text-xs text-green-400">Active</span>' : '<span class="text-xs text-red-400">Disabled</span>'}</td>
+  <td class="px-4 py-2.5 text-xs text-gray-500">${ago(u.lastLogin)}</td>
+  <td class="px-4 py-2.5 text-center">
+    <div class="flex gap-1 justify-center">
+      <button onclick="openEditUser(${u.id})" class="px-2 py-1 bg-blue-900 hover:bg-blue-800 rounded text-xs">Edit</button>
+      <button onclick="confirmDeleteUser(${u.id},'${escapeAttr(u.email)}')" class="px-2 py-1 bg-red-950 hover:bg-red-900 rounded text-xs text-red-400">Delete</button>
+    </div>
+  </td>
+</tr>`).join('');
+        }
+
+        function openAddUser() {
+            document.getElementById('userModalTitle').textContent = 'Add User';
+            ['uf-id', 'uf-email', 'uf-password', 'uf-first', 'uf-last', 'uf-maxdev'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('uf-role').value = 'USER';
+            document.getElementById('uf-subscription').value = 'FREE';
+            document.getElementById('uf-maxdev').value = '5';
+            document.getElementById('uf-active').checked = true;
+            document.getElementById('uf-email').disabled = false;
+            document.getElementById('user-form-err').classList.add('hidden');
+            document.getElementById('modalUser').classList.remove('hidden');
+        }
+
+        function openEditUser(id) {
+            const u = users.find(x => x.id === id);
+            if (!u) return;
+            document.getElementById('userModalTitle').textContent = 'Edit User';
+            document.getElementById('uf-id').value = u.id;
+            document.getElementById('uf-email').value = u.email;
+            document.getElementById('uf-email').disabled = true;
+            document.getElementById('uf-password').value = '';
+            document.getElementById('uf-first').value = u.firstName || '';
+            document.getElementById('uf-last').value = u.lastName || '';
+            document.getElementById('uf-role').value = u.role;
+            document.getElementById('uf-subscription').value = u.subscription;
+            document.getElementById('uf-maxdev').value = u.maxDevicesAllowed;
+            document.getElementById('uf-active').checked = u.isActive;
+            document.getElementById('user-form-err').classList.add('hidden');
+            document.getElementById('modalUser').classList.remove('hidden');
+        }
+
+        async function submitUser() {
+            const id = document.getElementById('uf-id').value;
+            const email = document.getElementById('uf-email').value.trim();
+            const password = document.getElementById('uf-password').value;
+            const firstName = document.getElementById('uf-first').value.trim();
+            const lastName = document.getElementById('uf-last').value.trim();
+            const role = document.getElementById('uf-role').value;
+            const subscription = document.getElementById('uf-subscription').value;
+            const maxDevicesAllowed = parseInt(document.getElementById('uf-maxdev').value) || 5;
+            const isActive = document.getElementById('uf-active').checked;
+            const errEl = document.getElementById('user-form-err');
+            let r;
+            if (id) {
+                const body = { firstName, lastName, role, subscription, isActive, maxDevicesAllowed };
+                if (password) body.password = password;
+                r = await api(`/v1/admin/users/${id}`, 'PUT', body);
+            } else {
+                if (!email || !password) {
+                    errEl.textContent = 'Email and password are required.';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+                r = await api('/v1/admin/users', 'POST', { email, password, firstName, lastName, role, subscription, maxDevicesAllowed, isActive });
+            }
+            if (!r.ok) {
+                errEl.textContent = r.data.error || 'Failed to save user';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            closeModal('modalUser');
+            showToast(id ? 'User updated' : 'User created');
+            loadUsers();
+        }
+
+        function confirmDeleteUser(id, email) {
+            showConfirm(`Delete User?`, `${email} — All their devices will be unlinked.`, async () => {
+                await api(`/v1/admin/users/${id}`, 'DELETE');
+                showToast('User deleted');
+                loadUsers();
+            });
+        }
+
+        /* ════════════════════════════════════════
+           APK UPDATE FUNCTIONS
+        ════════════════════════════════════════ */
+        async function fetchApkInfo() {
+            const r = await api('/v1/admin/apk/info');
+            if (r.ok) {
+                document.getElementById('s-apk-version').textContent = r.data.version || '—';
+            }
+        }
+
+        function openApkModal() {
+            api('/v1/admin/apk/info').then(r => {
+                if (r.ok) {
+                    document.getElementById('apk-current-version').textContent = r.data.version || '—';
+                    document.getElementById('apk-current-url').textContent = r.data.downloadUrl || '—';
+                }
+            });
+            document.getElementById('apk-version').value = '';
+            document.getElementById('apk-file').value = '';
+            document.getElementById('apk-force').checked = false;
+            document.getElementById('apk-progress-wrap').classList.add('hidden');
+            document.getElementById('modalApk').classList.remove('hidden');
+        }
+
+        async function uploadApk() {
+            const fileInput = document.getElementById('apk-file');
+            const version = document.getElementById('apk-version').value.trim();
+            const forceUpdate = document.getElementById('apk-force').checked;
+
+            if (!version) { showToast('Enter a version number', 'error'); return; }
+            if (!fileInput.files.length) { showToast('Select an APK file', 'error'); return; }
+
+            const formData = new FormData();
+            formData.append('apk', fileInput.files[0]);
+            formData.append('version', version);
+            formData.append('forceUpdate', forceUpdate ? 'true' : 'false');
+
+            const progressWrap = document.getElementById('apk-progress-wrap');
+            const progressBar = document.getElementById('apk-progress-bar');
+            const progressLabel = document.getElementById('apk-progress-label');
+            progressWrap.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            progressLabel.textContent = 'Uploading…';
+
+            try {
+                await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/v1/admin/apk/upload');
+                    xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+                    xhr.upload.onprogress = e => {
+                        if (e.lengthComputable) {
+                            const pct = Math.round((e.loaded / e.total) * 100);
+                            progressBar.style.width = pct + '%';
+                            progressLabel.textContent = `Uploading… ${pct}%`;
+                        }
+                    };
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            const data = JSON.parse(xhr.responseText);
+                            progressBar.style.width = '100%';
+                            progressLabel.textContent = 'Upload complete!';
+                            showToast(`APK v${data.version} uploaded${forceUpdate ? ` · pushed to ${data.notifiedDevices} device(s)` : ''}`);
+                            setTimeout(() => { closeModal('modalApk'); fetchApkInfo(); }, 800);
+                            resolve(data);
+                        } else {
+                            reject(new Error(xhr.responseText));
+                        }
+                    };
+                    xhr.onerror = () => reject(new Error('Network error'));
+                    xhr.send(formData);
+                });
+            } catch (err) {
+                progressWrap.classList.add('hidden');
+                showToast('Upload failed: ' + err.message, 'error');
+            }
+        }
+
+        async function setApkVersionOnly() {
+            const version = document.getElementById('apk-version').value.trim();
+            if (!version) { showToast('Enter version', 'error'); return; }
+            const r = await api('/v1/admin/apk/update', 'POST', { version });
+            if (r.ok) { showToast('Version updated'); closeModal('modalApk'); fetchApkInfo(); }
+            else showToast(r.data.error || 'Failed', 'error');
+        }
+
+        async function forcePushApk() {
+            showConfirm('Force Push APK?',
+                'This will send an immediate update command to ALL online devices.',
+                async () => {
+                    const r = await api('/v1/admin/apk/force-push', 'POST');
+                    if (r.ok) showToast(`Update pushed to ${r.data.notifiedDevices} device(s)`);
+                    else showToast(r.data.error || 'Failed', 'error');
+                }
+            );
+        }
+
+        /* ════════════════════════════════════════
+           MODAL HELPERS
+        ════════════════════════════════════════ */
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        document.addEventListener('click', e => {
+            ['modalUrl', 'modalDetail', 'modalRename', 'modalUser', 'modalConfirm', 'modalApk'].forEach(id => {
+                const el = document.getElementById(id);
+                if (e.target === el) closeModal(id);
+            });
+        });
+
+        // ESC key closes topmost modal
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                const modals = ['modalApk', 'modalConfirm', 'modalUser', 'modalRename', 'modalDetail', 'modalUrl'];
+                for (const id of modals) {
+                    const el = document.getElementById(id);
+                    if (el && !el.classList.contains('hidden')) {
+                        closeModal(id);
+                        break;
+                    }
+                }
+            }
+        });
+
+        function showConfirm(msg, sub, onYes) {
+            document.getElementById('confirm-msg').textContent = msg;
+            document.getElementById('confirm-sub').textContent = sub || '';
+            document.getElementById('modalConfirm').classList.remove('hidden');
+            const btn = document.getElementById('confirm-yes');
+            btn.onclick = () => { closeModal('modalConfirm'); onYes(); };
+        }
+
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className = `px-5 py-3 rounded-xl text-sm font-medium shadow-xl transition-all duration-300
+        ${type === 'error' ? 'bg-red-900 border border-red-700 text-red-200' : 'bg-green-900 border border-green-700 text-green-200'}`;
+            t.textContent = msg;
+            container.appendChild(t);
+            setTimeout(() => {
+                t.style.opacity = '0';
+                setTimeout(() => t.remove(), 300);
+            }, 3500);
         }
     </script>
 </body>
