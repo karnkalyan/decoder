@@ -493,44 +493,34 @@ app.post('/v1/admin/activate', flexAuth, async (req, res) => {
         });
 
         if (!isActivated) {
-            // ── DEAUTH: send deauth command immediately ──
+            // ── DEAUTH ──
             console.log(`[DEAUTH] Deactivating device ${normalizedHwid}`);
-            const sent = notifyDevice(normalizedHwid, 'deauth');
-
-            // Also send stop as backup after a tiny delay
-            if (sent) {
-                setTimeout(() => {
-                    notifyDevice(normalizedHwid, 'stop');
-                }, 500);
-            }
-
+            notifyDevice(normalizedHwid, 'deauth');
+            setTimeout(() => notifyDevice(normalizedHwid, 'stop'), 500);
             await logEvent(normalizedHwid, 'DEAUTHORIZED');
 
-            // Update runtime state immediately
             const rt = deviceRuntime.get(normalizedHwid);
-            if (rt) {
-                rt.status = 'DEAUTHORIZED';
-                rt.currentUrl = '';
-            }
+            if (rt) { rt.status = 'DEAUTHORIZED'; rt.currentUrl = ''; }
         } else {
-            // ── AUTH: send play command with stream URL ──
+            // ── AUTH: send activate FIRST, then play ──
             console.log(`[AUTH] Activating device ${normalizedHwid}`);
             await logEvent(normalizedHwid, 'ACTIVATED');
 
-            // Fetch the device with its stream URL
+            // Step 1: Tell device it's activated (flips isActivated flag on device)
+            notifyDevice(normalizedHwid, 'activate');
+
+            // Step 2: Find stream URL and send play after brief delay
             const fullDev = await prisma.device.findUnique({
                 where: { hwid: normalizedHwid },
                 include: { channel: true }
             });
-
             const streamUrl = fullDev?.streamUrl || fullDev?.channel?.streamUrl;
 
             if (streamUrl) {
-                // Send play command so device starts streaming immediately
-                notifyDevice(normalizedHwid, 'play', { url: streamUrl });
-            } else {
-                // No URL assigned yet, just notify activation
-                notifyDevice(normalizedHwid, 'activate');
+                // Delay ensures 'activate' is processed before 'play' arrives
+                setTimeout(() => {
+                    notifyDevice(normalizedHwid, 'play', { url: streamUrl });
+                }, 500);
             }
         }
 

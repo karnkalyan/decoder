@@ -3,7 +3,8 @@ services:
     build: .
     restart: always
     environment:
-      - DATABASE_URL=mysql://root:Decoder!@#123XPrem!um@db:3306/decodx_db
+      # PASSWORD URL-ENCODED (THIS IS CRITICAL)
+      - DATABASE_URL=mysql://root:Decoder%21%40%23123XPrem%21um@db:3306/decodx_db
       - ADMIN_API_KEY=DecoDxPremiumDecoder@Alf@Key123
       - PORT=3100
     depends_on:
@@ -19,7 +20,8 @@ services:
       - MYSQL_ROOT_PASSWORD=Decoder!@#123XPrem!um
       - MYSQL_DATABASE=decodx_db
     ports:
-      - "3306:3306"
+      # FIX: changed host port to avoid conflict
+      - "3307:3306"
     volumes:
       - db-data:/var/lib/mysql
     healthcheck:
